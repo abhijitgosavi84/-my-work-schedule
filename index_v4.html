@@ -1,0 +1,150 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>My Work Schedule</title>
+<style>
+*{box-sizing:border-box}body{margin:0;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;background:#f5f6fa;color:#17181c}
+header{background:#111827;color:white;padding:20px 16px;position:sticky;top:0;z-index:5}
+h1{margin:0;font-size:25px}.sub{opacity:.7;font-size:13px;margin-top:4px}
+main{max-width:900px;margin:auto;padding:14px 14px 100px}.stats{display:grid;grid-template-columns:repeat(3,1fr);gap:9px;margin-bottom:12px}
+.card{background:white;border-radius:14px;padding:13px;box-shadow:0 2px 10px #0000000a}.num{font-size:22px;font-weight:750}.lbl{font-size:12px;color:#666;margin-top:3px}
+.toolbar{display:flex;gap:8px;margin-bottom:12px}.toolbar>*{flex:1;min-width:0}
+input,select,textarea,button{font:inherit}input,select,textarea{width:100%;padding:11px;border:1px solid #d8dbe2;border-radius:10px;background:white}textarea{min-height:80px}
+button{border:0;border-radius:10px;padding:11px 14px;font-weight:650;cursor:pointer}.primary{background:#111827;color:white}.muted{background:#eef0f4;color:#333}
+.section{font-weight:750;margin:16px 2px 9px}.event{background:white;border-radius:15px;padding:13px;margin:9px 0;box-shadow:0 2px 10px #0000000a}
+.row{display:flex;justify-content:space-between;gap:10px}.title{font-weight:750}.small{font-size:12px;color:#666;margin-top:5px}
+.badge{display:inline-block;border-radius:99px;padding:5px 9px;font-size:12px;font-weight:700;margin-top:7px}.paid{background:#dcfce7;color:#166534}.pending{background:#fee2e2;color:#991b1b}.partial{background:#fef3c7;color:#92400e}
+.actions{display:flex;gap:7px;margin-top:10px}.actions button{padding:8px 10px}
+dialog{border:0;border-radius:18px;padding:0;width:min(94vw,620px);box-shadow:0 20px 60px #0005}dialog::backdrop{background:#0008}
+.form{padding:18px}.form h2{margin:0 0 13px}.grid{display:grid;grid-template-columns:1fr 1fr;gap:10px}.full{grid-column:1/-1}.field label{display:block;font-size:13px;font-weight:700;margin:0 0 5px}.bottom{position:fixed;bottom:15px;left:50%;transform:translateX(-50%);z-index:4}.bottom button{border-radius:99px;padding:14px 22px}
+.studentBox{border:1px solid #ddd;border-radius:12px;padding:10px;margin-top:8px;background:#fafafa}.studentHead{display:flex;justify-content:space-between;gap:8px;align-items:center}.studentName{font-weight:700}.studentGrid{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:8px}
+hr{border:0;border-top:1px solid #eee;margin:14px 0}
+@media(max-width:520px){.stats{gap:6px}.card{padding:10px}.grid,.studentGrid{grid-template-columns:1fr 1fr}.form{padding:16px}}
+</style>
+</head>
+<body>
+<header><h1>My Work Schedule</h1><div class="sub">Dance • Zumba • Garba • Performances</div></header>
+<main>
+<div class="stats">
+<div class="card"><div class="num" id="todayCount">0</div><div class="lbl">Today</div></div>
+<div class="card"><div class="num" id="monthReceived">₹0</div><div class="lbl">Month Received</div></div>
+<div class="card"><div class="num" id="pending">₹0</div><div class="lbl">Pending</div></div>
+</div>
+<div class="toolbar">
+<input type="date" id="filterDate">
+<input id="search" placeholder="Search class / student / customer">
+<select id="filterType"><option value="">All</option><option>Class</option><option>Individual</option><option>Performance</option></select>
+</div>
+<div class="section">Schedule</div>
+<div id="list"></div>
+</main>
+<div class="bottom"><button class="primary" onclick="openForm()">＋ Add Schedule</button></div>
+
+<dialog id="dlg">
+<form class="form" onsubmit="saveEvent(event)">
+<h2 id="formTitle">Add Schedule</h2>
+<input type="hidden" id="editId">
+<div class="grid">
+<div class="field"><label>Start Date</label><input required type="date" id="startDate"></div>
+<div class="field"><label>Start Time</label><input required type="time" id="startTime"></div>
+<div class="field"><label>End Date</label><input required type="date" id="endDate"></div>
+<div class="field"><label>End Time</label><input required type="time" id="endTime"></div>
+<div class="field full"><label>Event / Class Name</label><input required id="event" placeholder="Zumba / Garba / Performance / Class"></div>
+<div class="field"><label>Customer / Parent Name</label><input id="customer" placeholder="Name"></div>
+<div class="field"><label>Mobile Number</label><input id="mobile" inputmode="tel" placeholder="Mobile"></div>
+<div class="field"><label>Type</label><select id="type"><option>Class</option><option>Individual</option><option>Performance</option></select></div>
+<div class="field"><label>Total Booking / Event Fee (₹)</label><input type="number" min="0" id="fee" value="0"></div>
+<div class="field"><label>Received Now (₹)</label><input type="number" min="0" id="paid" value="0"></div>
+<div class="field"><label>Payment Status</label><select id="payStatus"><option value="pending">Pending</option><option value="partial">Half / Partial</option><option value="paid">Full Received</option></select></div>
+<div class="field full"><label>Notes</label><textarea id="notes" placeholder="Venue, songs, costume, special instructions..."></textarea></div>
+</div>
+
+<div id="studentArea" style="display:none">
+<hr><div class="row"><b>Students / Members</b><button type="button" class="muted" onclick="addStudent()">＋ Add Student</button></div>
+<div id="students"></div>
+</div>
+
+<div class="actions">
+<button type="button" class="muted" onclick="dlg.close()">Cancel</button>
+<button class="primary" type="submit">Save</button>
+</div>
+</form>
+</dialog>
+
+<script>
+const KEY="workScheduleV4";
+let data=JSON.parse(localStorage.getItem(KEY)||"[]");
+
+const $=id=>document.getElementById(id);
+const today=()=>new Date().toISOString().slice(0,10);
+function money(n){return "₹"+Number(n||0).toLocaleString("en-IN")}
+function esc(s){return String(s??"").replace(/[&<>"']/g,m=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[m]))}
+
+$("type").onchange=()=>{$("studentArea").style.display=$("type").value==="Class"?"block":"none"};
+function openForm(id=null){
+ $("formTitle").textContent=id?"Edit Schedule":"Add Schedule"; $("editId").value=id||"";
+ if(id){
+  let e=data.find(x=>x.id===id); if(!e)return;
+  ["startDate","startTime","endDate","endTime","event","customer","mobile","type","fee","paid","payStatus","notes"].forEach(k=>$(k).value=e[k]??"");
+  $("students").innerHTML=""; (e.students||[]).forEach(addStudent);
+ }else{
+  $("startDate").value=today();$("endDate").value=today();$("startTime").value="11:00";$("endTime").value="12:00";
+  $("event").value="";$("customer").value="";$("mobile").value="";$("type").value="Class";$("fee").value=0;$("paid").value=0;$("payStatus").value="pending";$("notes").value="";$("students").innerHTML="";
+ }
+ $("type").onchange(); dlg.showModal();
+}
+function addStudent(s={}){
+ const d=document.createElement("div"); d.className="studentBox";
+ d.innerHTML=`<div class="studentHead"><span class="studentName">Student</span><button type="button" class="muted" onclick="this.closest('.studentBox').remove()">Remove</button></div>
+ <div class="studentGrid">
+ <input class="sname" placeholder="Student Name" value="${esc(s.name)}">
+ <input class="sjoin" type="date" value="${esc(s.joining)}">
+ <input class="sfee" type="number" min="0" placeholder="Fee (₹)" value="${s.fee??""}">
+ <select class="sstatus"><option value="pending">Pending</option><option value="partial">Half / Partial</option><option value="paid">Full Received</option></select>
+ <input class="spaid" type="number" min="0" placeholder="Received (₹)" value="${s.paid??0}">
+ <input class="smobile" inputmode="tel" placeholder="Mobile" value="${esc(s.mobile)}">
+ </div>`;
+ d.querySelector(".sstatus").value=s.status||"pending"; $("students").appendChild(d);
+}
+function saveEvent(ev){
+ ev.preventDefault();
+ const students=[...document.querySelectorAll(".studentBox")].map(x=>({
+  name:x.querySelector(".sname").value,joining:x.querySelector(".sjoin").value,
+  fee:+x.querySelector(".sfee").value||0,status:x.querySelector(".sstatus").value,
+  paid:+x.querySelector(".spaid").value||0,mobile:x.querySelector(".smobile").value
+ })).filter(x=>x.name);
+ const id=$("editId").value||crypto.randomUUID();
+ const e={id,startDate:$("startDate").value,startTime:$("startTime").value,endDate:$("endDate").value,endTime:$("endTime").value,
+ event:$("event").value,customer:$("customer").value,mobile:$("mobile").value,type:$("type").value,
+ fee:+$("fee").value||0,paid:+$("paid").value||0,payStatus:$("payStatus").value,notes:$("notes").value,students};
+ const i=data.findIndex(x=>x.id===id); if(i>=0)data[i]=e;else data.push(e);
+ localStorage.setItem(KEY,JSON.stringify(data));dlg.close();render();
+}
+function removeEvent(id){if(confirm("Delete this schedule?")){data=data.filter(x=>x.id!==id);localStorage.setItem(KEY,JSON.stringify(data));render()}}
+function render(){
+ const q=$("search").value.toLowerCase(), fd=$("filterDate").value, ft=$("filterType").value;
+ let arr=data.filter(e=>(!fd||e.startDate<=fd&&e.endDate>=fd)&&(!ft||e.type===ft)&&
+  (!q||(e.event+" "+e.customer+" "+(e.students||[]).map(s=>s.name).join(" ")).toLowerCase().includes(q)))
+ .sort((a,b)=>(a.startDate+a.startTime).localeCompare(b.startDate+b.startTime));
+ $("list").innerHTML=arr.length?arr.map(e=>{
+  let due=Math.max(0,e.fee-e.paid), status=e.payStatus||(due?e.paid?"partial":"pending":"paid");
+  let students=(e.students||[]).map(s=>`<div class="studentBox"><b>${esc(s.name)}</b><div class="small">Joining: ${esc(s.joining||"-")} • Fee ${money(s.fee)} • Received ${money(s.paid)} • <b>${s.status}</b>${s.mobile?" • "+esc(s.mobile):""}</div></div>`).join("");
+  return `<div class="event"><div class="row"><div><div class="title">${esc(e.event)}</div><div class="small">${esc(e.startDate)} ${esc(e.startTime)} → ${esc(e.endDate)} ${esc(e.endTime)}</div></div><b>${esc(e.type)}</b></div>
+  <div class="small">${esc(e.customer||"")} ${e.mobile?"• "+esc(e.mobile):""}</div>
+  <span class="badge ${status}">${status==="paid"?"Full Received":status==="partial"?"Half / Partial":"Pending"} • Received ${money(e.paid)}${due?" • Due "+money(due):""}</span>
+  ${students}
+  ${e.notes?`<div class="small">📝 ${esc(e.notes)}</div>`:""}
+  <div class="actions"><button class="muted" onclick="openForm('${e.id}')">Edit</button>${e.mobile?`<button class="muted" onclick="location.href='tel:${e.mobile}'">Call</button>`:""}<button class="muted" onclick="removeEvent('${e.id}')">Delete</button></div></div>`
+ }).join(""):`<div class="card">No schedules found.</div>`;
+ let t=today(), month=t.slice(0,7);
+ $("todayCount").textContent=data.filter(e=>e.startDate<=t&&e.endDate>=t).length;
+ $("monthReceived").textContent=money(data.reduce((n,e)=>n+(e.startDate.startsWith(month)?e.paid:0),0));
+ $("pending").textContent=money(data.reduce((n,e)=>n+Math.max(0,e.fee-e.paid),0));
+}
+["search","filterDate","filterType"].forEach(id=>$(id).addEventListener("input",render));
+render();
+</script>
+</body>
+</html>
