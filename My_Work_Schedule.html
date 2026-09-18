@@ -1,0 +1,104 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta charset="utf-8">
+<title>My Work Schedule</title>
+<style>
+*{box-sizing:border-box}body{margin:0;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;background:#f5f6fa;color:#17181c}
+header{background:#111827;color:white;padding:22px 18px 18px;position:sticky;top:0;z-index:3}
+h1{margin:0;font-size:25px} .sub{opacity:.7;font-size:13px;margin-top:4px}
+main{max-width:760px;margin:auto;padding:14px 14px 90px}.stats{display:grid;grid-template-columns:repeat(3,1fr);gap:9px;margin-bottom:14px}
+.card{background:white;border-radius:15px;padding:13px;box-shadow:0 2px 10px #0000000a}.num{font-size:21px;font-weight:750}.lbl{font-size:11px;color:#6b7280;margin-top:3px}
+.toolbar{display:flex;gap:8px;margin-bottom:12px}.toolbar input,.toolbar select{flex:1;min-width:0}
+input,select,textarea,button{font:inherit}input,select,textarea{width:100%;padding:11px;border:1px solid #d8dbe2;border-radius:10px;background:white}textarea{resize:vertical}
+button{border:0;border-radius:10px;padding:11px 14px;font-weight:650;cursor:pointer}.primary{background:#111827;color:white}.danger{background:#fee2e2;color:#991b1b}.muted{background:#eef0f4}
+.section{font-weight:750;margin:16px 2px 9px}.event{background:white;border-radius:15px;padding:13px;margin:9px 0;box-shadow:0 2px 10px #0000000a;border-left:4px solid #111827}
+.row{display:flex;justify-content:space-between;gap:10px}.title{font-weight:750}.small{font-size:12px;color:#667085;margin-top:5px}.pill{font-size:11px;padding:4px 8px;border-radius:99px;background:#eef0f4;white-space:nowrap;height:max-content}
+.paid{background:#dcfce7;color:#166534}.pending{background:#fee2e2;color:#991b1b}.partial{background:#fef3c7;color:#92400e}
+.actions{display:flex;gap:7px;margin-top:10px}.actions button{padding:7px 10px;font-size:12px}
+dialog{border:0;border-radius:18px;padding:0;width:min(94vw,520px);box-shadow:0 20px 60px #0005}dialog::backdrop{background:#0006}
+.form{padding:18px}.form h2{margin:0 0 13px}.grid{display:grid;grid-template-columns:1fr 1fr;gap:10px}.full{grid-column:1/-1}.form label{font-size:12px;font-weight:650;display:block;margin-bottom:5px}.form .field{margin-bottom:10px}
+.bottom{position:fixed;bottom:15px;left:50%;transform:translateX(-50%);z-index:4}.bottom button{border-radius:99px;padding:14px 22px;box-shadow:0 8px 25px #0004}
+.empty{text-align:center;padding:35px 10px;color:#777}
+@media(max-width:420px){.stats{gap:6px}.card{padding:10px}.num{font-size:18px}}
+</style>
+</head>
+<body>
+<header><h1>My Work Schedule</h1><div class="sub">Dance • Zumba • Garba • Performances</div></header>
+<main>
+<div class="stats">
+<div class="card"><div class="num" id="todayCount">0</div><div class="lbl">Today</div></div>
+<div class="card"><div class="num" id="monthIncome">₹0</div><div class="lbl">Month Fees</div></div>
+<div class="card"><div class="num" id="pending">₹0</div><div class="lbl">Pending</div></div>
+</div>
+<div class="toolbar"><input type="date" id="filterDate"><button class="muted" onclick="clearFilter()">All</button></div>
+<div class="toolbar"><input id="search" placeholder="Search customer / event..." oninput="render()"><select id="filterType" onchange="render()"><option value="">All types</option><option>Individual</option><option>Group</option><option>Performance</option></select></div>
+<div class="section">Schedule</div><div id="list"></div>
+</main>
+<div class="bottom"><button class="primary" onclick="openForm()">＋ Add Schedule</button></div>
+
+<dialog id="dlg"><form class="form" onsubmit="saveEvent(event)">
+<h2 id="formTitle">Add Schedule</h2>
+<input type="hidden" id="editId">
+<div class="grid">
+<div class="field"><label>Date</label><input required type="date" id="date"></div>
+<div class="field"><label>Start Time</label><input required type="time" id="start"></div>
+<div class="field"><label>End Time</label><input type="time" id="end"></div>
+<div class="field"><label>Event / Class Name</label><input required id="event" placeholder="Zumba / Garba / Performance"></div>
+<div class="field"><label>Customer Name</label><input required id="customer"></div>
+<div class="field"><label>Mobile Number</label><input type="tel" id="phone" inputmode="tel"></div>
+<div class="field"><label>Participants</label><input type="number" min="1" value="1" id="people"></div>
+<div class="field"><label>Type</label><select id="type"><option>Individual</option><option>Group</option><option>Performance</option></select></div>
+<div class="field"><label>Total Fee (₹)</label><input type="number" min="0" value="0" id="fee"></div>
+<div class="field"><label>Paid (₹)</label><input type="number" min="0" value="0" id="paid"></div>
+<div class="field full"><label>Notes</label><textarea id="notes" rows="2" placeholder="Costume, songs, venue, special instructions..."></textarea></div>
+</div>
+<div class="actions"><button type="button" class="muted" onclick="dlg.close()">Cancel</button><button class="primary" type="submit">Save</button></div>
+</form></dialog>
+
+<script>
+const KEY="workScheduleV1";
+let data=JSON.parse(localStorage.getItem(KEY)||"[]");
+const $=id=>document.getElementById(id);
+const today=()=>new Date().toISOString().slice(0,10);
+function money(n){return "₹"+Number(n||0).toLocaleString("en-IN")}
+function openForm(e=null){
+ $("formTitle").textContent=e?"Edit Schedule":"Add Schedule";
+ $("editId").value=e?.id||"";$("date").value=e?.date||today();$("start").value=e?.start||"11:00";$("end").value=e?.end||"";
+ $("event").value=e?.event||"";$("customer").value=e?.customer||"";$("phone").value=e?.phone||"";
+ $("people").value=e?.people||1;$("type").value=e?.type||"Individual";$("fee").value=e?.fee||0;$("paid").value=e?.paid||0;$("notes").value=e?.notes||"";
+ dlg.showModal();
+}
+function saveEvent(ev){
+ ev.preventDefault();
+ const id=$("editId").value||crypto.randomUUID();
+ const obj={id,date:$("date").value,start:$("start").value,end:$("end").value,event:$("event").value,customer:$("customer").value,phone:$("phone").value,people:+$("people").value,type:$("type").value,fee:+$("fee").value,paid:+$("paid").value,notes:$("notes").value};
+ const i=data.findIndex(x=>x.id===id);if(i>=0)data[i]=obj;else data.push(obj);
+ localStorage.setItem(KEY,JSON.stringify(data));dlg.close();render();
+}
+function remove(id){if(confirm("Delete this schedule?")){data=data.filter(x=>x.id!==id);localStorage.setItem(KEY,JSON.stringify(data));render()}}
+function clearFilter(){$("filterDate").value="";render()}
+$("filterDate").value=today();
+function render(){
+ const q=$("search").value.toLowerCase(), d=$("filterDate").value, t=$("filterType").value;
+ let arr=data.filter(e=>(!d||e.date===d)&&(!t||e.type===t)&&((e.customer+" "+e.event+" "+e.phone).toLowerCase().includes(q)));
+ arr.sort((a,b)=>(a.date+a.start).localeCompare(b.date+b.start));
+ $("list").innerHTML=arr.length?arr.map(e=>{
+  const due=Math.max(0,e.fee-e.paid), cls=due===0?"paid":e.paid>0?"partial":"pending", status=due===0?"Paid":e.paid>0?"Partial":"Pending";
+  return `<div class="event"><div class="row"><div><div class="title">${esc(e.event)}</div><div class="small">📅 ${e.date} &nbsp; ⏰ ${e.start}${e.end?"–"+e.end:""}</div></div><span class="pill">${esc(e.type)}</span></div>
+  <div class="small">👤 ${esc(e.customer)} &nbsp; 👥 ${e.people} &nbsp; ${e.phone?"📞 "+esc(e.phone):""}</div>
+  <div class="small">Fee: <b>${money(e.fee)}</b> &nbsp; Paid: ${money(e.paid)} &nbsp; <span class="pill ${cls}">${status}${due?" • "+money(due)+" due":""}</span></div>
+  ${e.notes?`<div class="small">📝 ${esc(e.notes)}</div>`:""}
+  <div class="actions"><button class="muted" onclick='openForm(${JSON.stringify(e)})'>Edit</button>${e.phone?`<button class="muted" onclick="location.href='tel:${esc(e.phone)}'">Call</button>`:""}<button class="danger" onclick="remove('${e.id}')">Delete</button></div></div>`
+ }).join(""):"<div class='empty'>No schedules found.<br>Tap <b>＋ Add Schedule</b> to create one.</div>";
+ const now=new Date(), ym=now.toISOString().slice(0,7);
+ $("todayCount").textContent=data.filter(e=>e.date===today()).length;
+ $("monthIncome").textContent=money(data.filter(e=>e.date.startsWith(ym)).reduce((s,e)=>s+e.paid,0));
+ $("pending").textContent=money(data.reduce((s,e)=>s+Math.max(0,e.fee-e.paid),0));
+}
+function esc(s){return String(s??"").replace(/[&<>"']/g,m=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[m]))}
+render();
+</script>
+</body>
+</html>
