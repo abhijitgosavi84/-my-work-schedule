@@ -1,0 +1,272 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta charset="utf-8">
+<title>My Work Schedule</title>
+<style>
+*{box-sizing:border-box}
+body{margin:0;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;background:#f5f6fa;color:#17181c}
+header{background:#111827;color:white;padding:22px 18px 18px;position:sticky;top:0;z-index:3}
+h1{margin:0;font-size:25px}.sub{opacity:.7;font-size:13px;margin-top:4px}
+main{max-width:780px;margin:auto;padding:14px 14px 100px}
+.stats{display:grid;grid-template-columns:repeat(3,1fr);gap:9px;margin-bottom:14px}
+.card{background:white;border-radius:15px;padding:13px;box-shadow:0 2px 10px #0000000a}.num{font-size:21px;font-weight:750}.lbl{font-size:11px;color:#6b7280;margin-top:3px}
+.toolbar{display:flex;gap:8px;margin-bottom:12px}.toolbar input,.toolbar select{flex:1;min-width:0}
+input,select,textarea,button{font:inherit}input,select,textarea{width:100%;padding:11px;border:1px solid #d8dbe2;border-radius:10px;background:white}
+textarea{resize:vertical}button{border:0;border-radius:10px;padding:11px 14px;font-weight:650;cursor:pointer}
+.primary{background:#111827;color:white}.danger{background:#fee2e2;color:#991b1b}.muted{background:#eef0f4}
+.section{font-weight:750;margin:16px 2px 9px}
+.event{background:white;border-radius:15px;padding:13px;margin:9px 0;box-shadow:0 2px 10px #0000000a;border-left:4px solid #111827}
+.row{display:flex;justify-content:space-between;gap:10px}.title{font-weight:750}.small{font-size:12px;color:#667085;margin-top:5px}
+.pill{font-size:11px;padding:4px 8px;border-radius:99px;background:#eef0f4;white-space:nowrap;height:max-content}
+.paid{background:#dcfce7;color:#166534}.pending{background:#fee2e2;color:#991b1b}.partial{background:#fef3c7;color:#92400e}
+.actions{display:flex;gap:7px;margin-top:10px;flex-wrap:wrap}.actions button{padding:7px 10px;font-size:12px}
+dialog{border:0;border-radius:18px;padding:0;width:min(96vw,600px);max-height:92vh;box-shadow:0 20px 60px #0005}
+dialog::backdrop{background:#0006}.form{padding:18px;overflow:auto;max-height:92vh}.form h2{margin:0 0 13px}
+.grid{display:grid;grid-template-columns:1fr 1fr;gap:10px}.full{grid-column:1/-1}
+.form label{font-size:12px;font-weight:650;display:block;margin-bottom:5px}.form .field{margin-bottom:10px}
+.bottom{position:fixed;bottom:15px;left:50%;transform:translateX(-50%);z-index:4}.bottom button{border-radius:99px;padding:14px 22px;box-shadow:0 8px 25px #0004}
+.empty{text-align:center;padding:35px 10px;color:#777}
+.memberBox{background:#f7f8fb;border:1px solid #e1e4ea;border-radius:12px;padding:10px;margin:8px 0}
+.memberHead{display:grid;grid-template-columns:1.4fr .9fr .8fr .9fr auto;gap:7px;align-items:end}
+.memberHead label{font-size:10px;margin-bottom:4px}.memberActions{display:flex;gap:7px;margin-top:8px}
+.memberSummary{display:flex;gap:8px;flex-wrap:wrap;margin:8px 0}
+.notice{background:#eef5ff;border-radius:10px;padding:10px;font-size:12px;color:#344054;margin-bottom:10px}
+.hidden{display:none!important}
+@media(max-width:560px){.grid{grid-template-columns:1fr 1fr}.memberHead{grid-template-columns:1fr 1fr}.memberHead .mname{grid-column:1/-1}}
+@media(max-width:420px){.stats{gap:6px}.card{padding:10px}.num{font-size:18px}}
+</style>
+</head>
+<body>
+<header><h1>My Work Schedule</h1><div class="sub">Dance • Zumba • Garba • Performances</div></header>
+
+<main>
+<div class="stats">
+  <div class="card"><div class="num" id="todayCount">0</div><div class="lbl">Today</div></div>
+  <div class="card"><div class="num" id="monthIncome">₹0</div><div class="lbl">Month Received</div></div>
+  <div class="card"><div class="num" id="pending">₹0</div><div class="lbl">Pending</div></div>
+</div>
+
+<div class="toolbar"><input type="date" id="filterDate"><button class="muted" onclick="clearFilter()">All</button></div>
+<div class="toolbar"><input id="search" placeholder="Search class / student / customer..." oninput="render()"><select id="filterType" onchange="render()"><option value="">All types</option><option>Class</option><option>Individual</option><option>Performance</option></select></div>
+<div class="section">Schedule</div><div id="list"></div>
+</main>
+
+<div class="bottom"><button class="primary" onclick="openForm()">＋ Add Schedule</button></div>
+
+<dialog id="dlg">
+<form class="form" onsubmit="saveEvent(event)">
+<h2 id="formTitle">Add Schedule</h2>
+<input type="hidden" id="editId">
+
+<div class="grid">
+<div class="field"><label>Start Date</label><input required type="date" id="startDate"></div>
+<div class="field"><label>Start Time</label><input required type="time" id="startTime"></div>
+<div class="field"><label>End Date</label><input required type="date" id="endDate"></div>
+<div class="field"><label>End Time</label><input required type="time" id="endTime"></div>
+
+<div class="field full"><label>Event / Class Name</label><input required id="event" placeholder="e.g. RK Kids Jr / Garba Class / Wedding Performance"></div>
+<div class="field"><label>Type</label><select id="type" onchange="toggleType()"><option>Class</option><option>Individual</option><option>Performance</option></select></div>
+<div class="field"><label>Customer / Organizer</label><input id="customer" placeholder="Name"></div>
+<div class="field"><label>Mobile Number</label><input type="tel" id="phone" inputmode="tel"></div>
+<div class="field" id="groupFeeField"><label>Class / Booking Fee (₹)</label><input type="number" min="0" value="0" id="fee"></div>
+<div class="field" id="groupPaidField"><label>Amount Received (₹)</label><input type="number" min="0" value="0" id="paid" oninput="syncBookingStatus()"></div>
+<div class="field" id="bookingStatusField"><label>Payment Status</label><select id="bookingStatus" onchange="syncBookingAmount()"><option>Pending</option><option>Half</option><option>Full</option><option>Custom</option></select></div>
+
+<div class="field full" id="membersSection">
+  <div class="notice">For a class, add every student's <b>name, joining date and payment</b>. You can choose Pending, Half or Full, and also enter the exact amount received.</div>
+  <div class="memberSummary">
+    <span class="pill" id="memberCount">0 Students</span>
+    <span class="pill paid" id="memberReceived">Received ₹0</span>
+    <span class="pill pending" id="memberDue">Due ₹0</span>
+  </div>
+  <div id="members"></div>
+  <div class="memberActions"><button type="button" class="muted" onclick="addMember()">＋ Add Student</button></div>
+</div>
+
+<div class="field full"><label>Notes</label><textarea id="notes" rows="2" placeholder="Costume, songs, venue, special instructions..."></textarea></div>
+</div>
+
+<div class="actions">
+<button type="button" class="muted" onclick="dlg.close()">Cancel</button>
+<button class="primary" type="submit">Save</button>
+</div>
+</form>
+</dialog>
+
+<script>
+const KEY="workScheduleV3";
+let data=JSON.parse(localStorage.getItem(KEY)||"[]");
+const oldV2=JSON.parse(localStorage.getItem("workScheduleV2")||"[]");
+const oldV1=JSON.parse(localStorage.getItem("workScheduleV1")||"[]");
+
+if(!data.length){
+  if(oldV2.length) data=oldV2.map(e=>({...e,type:e.type==="Group"?"Class":(e.type||"Class"),members:e.members||[]}));
+  else if(oldV1.length) data=oldV1.map(e=>({...e,startDate:e.date,endDate:e.date,startTime:e.start||"11:00",endTime:e.end||"",type:e.type==="Group"?"Class":(e.type||"Class"),members:[]}));
+  localStorage.setItem(KEY,JSON.stringify(data));
+}
+const $=id=>document.getElementById(id);
+const today=()=>new Date().toISOString().slice(0,10);
+const money=n=>"₹"+Number(n||0).toLocaleString("en-IN");
+function formatDate(d){if(!d)return "";const[y,m,day]=d.split("-");return `${day}/${m}/${y}`}
+
+function openForm(e=null){
+  $("formTitle").textContent=e?"Edit Schedule":"Add Schedule";
+  $("editId").value=e?.id||"";
+  $("startDate").value=e?.startDate||e?.date||today();
+  $("startTime").value=e?.startTime||e?.start||"11:00";
+  $("endDate").value=e?.endDate||e?.date||e?.startDate||today();
+  $("endTime").value=e?.endTime||e?.end||"";
+  $("event").value=e?.event||"";
+  $("type").value=e?.type||"Class";
+  $("customer").value=e?.customer||"";
+  $("phone").value=e?.phone||"";
+  $("fee").value=e?.fee||0;
+  $("paid").value=e?.paid||0;
+  $("bookingStatus").value=e?.bookingStatus||statusFromAmounts(e?.fee||0,e?.paid||0);
+  $("notes").value=e?.notes||"";
+  $("members").innerHTML="";
+  (e?.members||[]).forEach(addMember);
+  toggleType();
+  syncBookingStatus();
+  updateMemberSummary();
+  dlg.showModal();
+}
+
+function statusFromAmounts(fee,paid){
+  fee=Number(fee||0);paid=Number(paid||0);
+  if(paid<=0)return "Pending";
+  if(fee>0 && paid>=fee)return "Full";
+  if(fee>0 && paid===fee/2)return "Half";
+  return "Custom";
+}
+
+function toggleType(){
+  const isClass=$("type").value==="Class";
+  $("membersSection").classList.toggle("hidden",!isClass);
+  $("groupFeeField").querySelector("label").textContent=isClass?"Class / Total Fee (₹)":"Total Fee (₹)";
+}
+
+function syncBookingStatus(){
+  const fee=+$("fee").value||0,paid=+$("paid").value||0;
+  $("bookingStatus").value=statusFromAmounts(fee,paid);
+}
+function syncBookingAmount(){
+  const fee=+$("fee").value||0;
+  const s=$("bookingStatus").value;
+  if(s==="Pending")$("paid").value=0;
+  else if(s==="Half")$("paid").value=Math.round(fee/2);
+  else if(s==="Full")$("paid").value=fee;
+}
+
+function addMember(m={}){
+  const box=document.createElement("div");
+  box.className="memberBox";
+  box.dataset.id=m.id||crypto.randomUUID();
+  box.innerHTML=`
+    <div class="memberHead">
+      <div class="mname"><label>Student Name</label><input class="m-name" required value="${escAttr(m.name||"")}" placeholder="Name"></div>
+      <div><label>Joining Date</label><input class="m-date" required type="date" value="${m.joiningDate||today()}"></div>
+      <div><label>Fee (₹)</label><input class="m-fee" type="number" min="0" value="${Number(m.fee||0)}" oninput="updateMemberSummary()"></div>
+      <div><label>Payment</label><select class="m-status" onchange="memberStatusChange(this)"><option ${m.status==="Pending"||!m.status?"selected":""}>Pending</option><option ${m.status==="Half"?"selected":""}>Half</option><option ${m.status==="Full"?"selected":""}>Full</option><option ${m.status==="Custom"?"selected":""}>Custom</option></select></div>
+      <button type="button" class="danger" onclick="this.closest('.memberBox').remove();updateMemberSummary()">Remove</button>
+    </div>
+    <div style="margin-top:7px"><label>Amount Received (₹)</label><input class="m-paid" type="number" min="0" value="${Number(m.paid||0)}" oninput="updateMemberSummary()"></div>
+  `;
+  $("members").appendChild(box);
+  if(m.status) setMemberStatus(box,m.status);
+  updateMemberSummary();
+}
+
+function setMemberStatus(box,s){
+  const fee=+box.querySelector(".m-fee").value||0;
+  if(s==="Pending")box.querySelector(".m-paid").value=0;
+  else if(s==="Half")box.querySelector(".m-paid").value=Math.round(fee/2);
+  else if(s==="Full")box.querySelector(".m-paid").value=fee;
+  updateMemberSummary();
+}
+function memberStatusChange(sel){setMemberStatus(sel.closest(".memberBox"),sel.value)}
+
+function collectMembers(){
+  return [...document.querySelectorAll(".memberBox")].map(box=>({
+    id:box.dataset.id,
+    name:box.querySelector(".m-name").value.trim(),
+    joiningDate:box.querySelector(".m-date").value,
+    fee:+box.querySelector(".m-fee").value||0,
+    status:box.querySelector(".m-status").value,
+    paid:+box.querySelector(".m-paid").value||0
+  }));
+}
+
+function updateMemberSummary(){
+  const ms=collectMembers();
+  const total=ms.reduce((s,m)=>s+m.fee,0);
+  const received=ms.reduce((s,m)=>s+m.paid,0);
+  $("memberCount").textContent=`${ms.length} Student${ms.length===1?"":"s"}`;
+  $("memberReceived").textContent=`Received ${money(received)}`;
+  $("memberDue").textContent=`Due ${money(Math.max(0,total-received))}`;
+}
+
+function saveEvent(ev){
+  ev.preventDefault();
+  const id=$("editId").value||crypto.randomUUID();
+  const startDate=$("startDate").value,endDate=$("endDate").value;
+  if(endDate<startDate){alert("End Date cannot be before Start Date.");return}
+  const members=$("type").value==="Class"?collectMembers():[];
+  const fee=$("type").value==="Class"?members.reduce((s,m)=>s+m.fee,0):+$("fee").value||0;
+  const paid=$("type").value==="Class"?members.reduce((s,m)=>s+m.paid,0):+$("paid").value||0;
+  const obj={
+    id,startDate,endDate,startTime:$("startTime").value,endTime:$("endTime").value,
+    date:startDate,start:$("startTime").value,end:$("endTime").value,
+    event:$("event").value.trim(),type:$("type").value,customer:$("customer").value.trim(),
+    phone:$("phone").value.trim(),fee,paid,
+    bookingStatus:$("type").value==="Class"?(fee>0&&paid>=fee?"Full":paid>0?"Partial":"Pending"):$("bookingStatus").value,
+    members,notes:$("notes").value.trim()
+  };
+  const i=data.findIndex(x=>x.id===id); if(i>=0)data[i]=obj; else data.push(obj);
+  localStorage.setItem(KEY,JSON.stringify(data));dlg.close();render();
+}
+
+function remove(id){if(confirm("Delete this schedule?")){data=data.filter(x=>x.id!==id);localStorage.setItem(KEY,JSON.stringify(data));render()}}
+function clearFilter(){$("filterDate").value="";render()}
+$("filterDate").value=today();
+
+function render(){
+  const q=$("search").value.toLowerCase(),d=$("filterDate").value,t=$("filterType").value;
+  let arr=data.filter(e=>{
+    const sd=e.startDate||e.date||"",ed=e.endDate||e.date||sd;
+    const members=(e.members||[]).map(m=>m.name).join(" ");
+    return (!d||(d>=sd&&d<=ed))&&(!t||e.type===t)&&((e.customer+" "+e.event+" "+e.phone+" "+members).toLowerCase().includes(q));
+  });
+  arr.sort((a,b)=>(a.startDate||a.date||"").concat(a.startTime||a.start||"").localeCompare((b.startDate||b.date||"").concat(b.startTime||b.start||"")));
+  $("list").innerHTML=arr.length?arr.map(e=>{
+    const sd=e.startDate||e.date||"",ed=e.endDate||e.date||sd,st=e.startTime||e.start||"",et=e.endTime||e.end||"";
+    const members=e.members||[];
+    const total=members.length?members.reduce((s,m)=>s+(+m.fee||0),0):(+e.fee||0);
+    const received=members.length?members.reduce((s,m)=>s+(+m.paid||0),0):(+e.paid||0);
+    const due=Math.max(0,total-received),status=due===0?"Paid":received>0?"Partial":"Pending",cls=due===0?"paid":received>0?"partial":"pending";
+    const dateText=sd===ed?`📅 ${formatDate(sd)}`:`📅 ${formatDate(sd)} → ${formatDate(ed)}`;
+    const memberText=members.length?`<div class="small">👥 ${members.length} students &nbsp; • &nbsp; Received ${money(received)} / ${money(total)}</div>`:"";
+    return `<div class="event">
+      <div class="row"><div><div class="title">${esc(e.event)}</div><div class="small">${dateText} &nbsp; ⏰ ${st}${et?" → "+et:""}</div></div><span class="pill">${esc(e.type)}</span></div>
+      <div class="small">👤 ${esc(e.customer||"—")} ${e.phone?"&nbsp; 📞 "+esc(e.phone):""}</div>
+      ${memberText}
+      <div class="small">Fee: <b>${money(total)}</b> &nbsp; Paid: ${money(received)} &nbsp; <span class="pill ${cls}">${status}${due?" • "+money(due)+" due":""}</span></div>
+      ${members.length?`<details style="margin-top:8px"><summary style="font-size:12px;font-weight:650;cursor:pointer">View students & payments</summary><div>${members.map(m=>`<div class="small">• <b>${esc(m.name)}</b> — Joined ${formatDate(m.joiningDate)} — Fee ${money(m.fee)} — Received ${money(m.paid)} — ${esc(m.status)}</div>`).join("")}</div></details>`:""}
+      ${e.notes?`<div class="small">📝 ${esc(e.notes)}</div>`:""}
+      <div class="actions"><button class="muted" onclick='openForm(${JSON.stringify(e).replace(/</g,"\\u003c")})'>Edit</button>${e.phone?`<button class="muted" onclick="location.href='tel:${escAttr(e.phone)}'">Call</button>`:""}<button class="danger" onclick="remove('${e.id}')">Delete</button></div>
+    </div>`;
+  }).join(""):"<div class='empty'>No schedules found.<br>Tap <b>＋ Add Schedule</b> to create one.</div>";
+
+  const now=new Date(),ym=now.toISOString().slice(0,7);
+  $("todayCount").textContent=data.filter(e=>{const sd=e.startDate||e.date||"",ed=e.endDate||e.date||sd;return today()>=sd&&today()<=ed}).length;
+  $("monthIncome").textContent=money(data.filter(e=>(e.startDate||e.date||"").startsWith(ym)).reduce((s,e)=>s+(+e.paid||0),0));
+  $("pending").textContent=money(data.reduce((s,e)=>s+Math.max(0,(+e.fee||0)-(+e.paid||0)),0));
+}
+function esc(s){return String(s??"").replace(/[&<>"']/g,m=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[m]))}
+function escAttr(s){return esc(s)}
+render();
+</script>
+</body>
+</html>
